@@ -1,0 +1,5 @@
+me\millkun\registration\PlayerDataManager.class
+me\millkun\registration\CommandHandler.class
+me\millkun\registration\RegistrationPlugin.class
+me\millkun\registration\DataLoader.class
+me\millkun\registration\RegistrationEventHandler.class
