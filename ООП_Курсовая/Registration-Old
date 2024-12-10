@@ -1,0 +1,176 @@
+package me.millkun.registration;
+
+import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public final class Registration extends JavaPlugin implements Listener, CommandExecutor {
+
+    private Map<UUID, String> playerRanks = new HashMap<>();
+    private Map<UUID, String> playerPasswords = new HashMap<>();
+    private Map<UUID, Location> playerLocations = new HashMap<>();
+    private Map<UUID, Boolean> loginAttempted = new HashMap<>();
+    private FileConfiguration ranksConfig;
+    private File ranksFile;
+
+    @Override
+    public void onEnable() {
+        getServer().getPluginManager().registerEvents(this, this);
+        loadRanks();
+        getCommand("register").setExecutor(this);
+        getCommand("login").setExecutor(this);
+    }
+
+    @Override
+    public void onDisable() {
+        saveRanks();
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "Эту команду может использовать только игрок.");
+            return false;
+        }
+
+        Player player = (Player) sender;
+        UUID uuid = player.getUniqueId();
+
+        if (command.getName().equalsIgnoreCase("register")) {
+            if (playerRanks.containsKey(uuid)) {
+                player.sendMessage(ChatColor.RED + "Вы уже зарегистрированы.");
+                return false;
+            }
+
+            if (args.length != 2) {
+                player.sendMessage(ChatColor.RED + "/register <password> <password>");
+                return false;
+            }
+
+            String password1 = args[0];
+            String password2 = args[1];
+
+            if (!password1.equals(password2)) {
+                player.sendMessage(ChatColor.RED + "Пароли не совпадают.");
+                return false;
+            }
+
+            playerPasswords.put(uuid, password1);
+            playerRanks.put(uuid, "Пионер");
+            player.sendMessage(ChatColor.GREEN + "Вы успешно зарегистрировались!");
+            player.setGameMode(GameMode.SURVIVAL);
+            player.teleport(new Location(player.getWorld(), 0.5, 65, 0.5));
+            return true;
+        } else if (command.getName().equalsIgnoreCase("login")) {
+            if (!playerRanks.containsKey(uuid)) {
+                player.sendMessage(ChatColor.RED + "Сначала зарегистрируйтесь.");
+                return false;
+            }
+
+            if (loginAttempted.getOrDefault(uuid, false)) {
+                player.sendMessage(ChatColor.RED + "Вы уже пытались войти в систему.");
+                return false;
+            }
+
+            if (args.length != 1) {
+                player.sendMessage(ChatColor.RED + "/login <password>");
+                return false;
+            }
+
+            String password = args[0];
+            if (playerPasswords.containsKey(uuid) && playerPasswords.get(uuid).equals(password)) {
+                player.sendMessage(ChatColor.GREEN + "Вы успешно вошли в систему!");
+                player.setGameMode(GameMode.SURVIVAL);
+                if (playerLocations.containsKey(uuid)) {
+                    player.teleport(playerLocations.get(uuid));
+                } else {
+                    player.teleport(new Location(player.getWorld(), 0.5, 64.1, 0.5));
+                }
+                loginAttempted.put(uuid, true);
+                return true;
+            } else {
+                player.sendMessage(ChatColor.RED + "Неверный пароль.");
+                return false;
+            }
+        }
+        return false;
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+
+        if (!playerRanks.containsKey(uuid)) {
+            player.teleport(new Location(player.getWorld(), 500.5, 200, 500.5));
+            player.setGameMode(GameMode.ADVENTURE);
+            player.sendMessage(ChatColor.YELLOW + "Пожалуйста, зарегистрируйтесь с помощью команды /register <пароль> <пароль>");
+        } else {
+            player.teleport(new Location(player.getWorld(), 500.5, 200, 500.5));
+            player.setGameMode(GameMode.ADVENTURE);
+            player.sendMessage(ChatColor.YELLOW + "Пожалуйста, войдите в систему с помощью команды /login <пароль>");
+            player.sendMessage(ChatColor.YELLOW + "Если не понимаете какой пароль от Вас требуют, возможно ник, с которого Вы зашли, уже занят. Попробуйте изменить его.");
+            loginAttempted.put(uuid, false);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        playerLocations.put(player.getUniqueId(), player.getLocation());
+    }
+
+    private void loadRanks() {
+        ranksFile = new File("C:/Users/ttv36_000/Documents/MinecraftETU/ranks.yml");
+        if (!ranksFile.exists()) {
+            ranksFile.getParentFile().mkdirs();
+            saveResource("ranks.yml", false);
+        }
+        ranksConfig = YamlConfiguration.loadConfiguration(ranksFile);
+
+        for (String key : ranksConfig.getConfigurationSection("ranks").getKeys(false)) {
+            UUID uuid = UUID.fromString(key);
+            String rank = ranksConfig.getString("ranks." + key);
+            playerRanks.put(uuid, rank);
+        }
+
+        for (String key : ranksConfig.getConfigurationSection("passwords").getKeys(false)) {
+            UUID uuid = UUID.fromString(key);
+            String password = ranksConfig.getString("passwords." + key);
+            playerPasswords.put(uuid, password);
+        }
+    }
+
+    private void saveRanks() {
+        for (Map.Entry<UUID, String> entry : playerRanks.entrySet()) {
+            ranksConfig.set("ranks." + entry.getKey().toString(), entry.getValue());
+        }
+
+        for (Map.Entry<UUID, String> entry : playerPasswords.entrySet()) {
+            ranksConfig.set("passwords." + entry.getKey().toString(), entry.getValue());
+        }
+
+        try {
+            ranksConfig.save(ranksFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
