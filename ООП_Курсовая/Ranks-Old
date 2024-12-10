@@ -1,0 +1,415 @@
+package me.millkun.ranks;
+
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+    public final class Ranks extends JavaPlugin implements Listener {
+
+        private Map<UUID, String> playerRanks = new HashMap<>();
+        private FileConfiguration ranksConfig;
+        private File ranksFile;
+        private int animationIndex = 0;
+        private int currentAnimation = 0;
+
+        private static final String[][] ANIMATIONS = {
+                {
+                        "&f✈ &3Разработчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &4&l&k?&3азработчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&4&l&k?&3зработчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&4&l&k?&3работчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&4&l&k?&3аботчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&4&l&k?&3ботчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&4&l&k?&3отчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&4&l&k?&3тчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&4&l&k?&3чик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&4&l&k?&3ик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&4&l&k?&3к &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&4&l&k?&r &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &4&l&k?&b&lMorkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&4&k?&b&lorkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_М&4&l&k?&b&lrkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мо&4&l&k?&b&lkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мор&4&l&k?&b&lovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морк&4&l&k?&b&lvka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морко&4&l&k?&b&lka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морков&4&l&k?&b&la_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковк&4&l&k?&b&l_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка&4&l&k?&r &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &4&l&k?&2&lворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТ&4&l&k?&2&lорец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТв&4&l&k?&2&lрец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТво&4&l&k?&2&lец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТвор&4&l&k?&2&lц",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворе&4&l&k?",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                },
+                {
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_&b&lМорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &4&l_&c&lМ&b&lорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_&4&lМ&c&lо&b&lрковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&c&lМ&4&lо&c&lр&b&lковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_М&c&lо&4&lр&c&lк&b&lовка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мо&c&lр&4&lк&c&lо&b&lвка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мор&c&lк&4&lо&c&lв&b&lка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морк&c&lо&4&lв&c&lк&b&lа_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морко&c&lв&4&lк&c&lа&b&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морков&c&lк&4&lа&c&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковк&c&lа&4&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка&c&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковк&c&lа&4&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морков&c&lк&4&lа&c&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морко&c&lв&4&lк&c&lа&b&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морк&c&lо&4&lв&c&lк&b&lа_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мор&c&lк&4&lо&c&lв&b&lка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мо&c&lр&4&lк&c&lо&b&lвка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_М&c&lо&4&lр&c&lк&b&lовка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&c&lМ&4&lо&c&lр&b&lковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_&4&lМ&c&lо&b&lрковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &4&l_&c&lМ&b&lорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_&b&lМорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &c&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                },
+                {
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3&oр&3а&3&oб&3о&3&oт&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3■&3а&3&oб&3о&3&o■&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3■&3■&3&oб&3■&3■&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3■&3■&3▣&3■&3■&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3■&3▣&3▣&3▣&3■&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3■&3▣&3▣&3▣&3▣&3▣&3■&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3■&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3■&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3■&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3■ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▣&3▣&3▣&3▣&3▣&3▣&3▣&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▢&3▣&3▣&3▣&3▣&3▣&3▢&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▢&3▢&3▣&3▣&3▣&3▢&3▢&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▢&3▢&3▢&3&oб&3▢&3▢&3▢&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▢&3▢&3а&3&oб&3о&3▢&3▢&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3▢&3&oр&3а&3&oб&3о&3&oт&3▢&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3▢&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3▢&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3▢&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3▢ &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                },
+                {
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&lМорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_Мор&20&b&lовка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&bовка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&bовка_ &d&lТвор&20&d&lц",
+                        "&f✈ &3Р&3&oа&21&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&b&lовка_ &d&lТвор&20&d&lц",
+                        "&f✈ &3Р&3&oа&21&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&b&lов&20&b&lа_ &d&lТвор&20&d&lц",
+                        "&f✈ &3Р&3&oа&21&3&oр&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&b&lов&20&b&lа_ &d&lТ&21&d&lор&20&d&lц",
+                        "&f✈ &3Р&3&oа&210&3а&21&3о&3&oт&3ч&3&oи&3к &b&l_&21&b&lор&20&b&lов&20&b&lа_ &d&lТ&21&d&lор&20&d&lц ",
+                        "&f✈ &3Р&3&oа&210&3а&21&3о&3&oт&3ч&21&3к &b&l_&21&b&lор&20&b&lов&20&b&lа_ &d&lТ&21&d&lор&20&d&lц ",
+                        "&f✈ &3Р&3&oа&210&3а&21&3о&3&oт&3ч&21&3к &b&l_&21&b&lор&20&b&lов&20&b&lа_ &d&lТ&210&d&lр&20&d&lц ",
+                        "&f✈ &20&3&oа&210&3а&21&3о&3&oт&3ч&21&3к &b&l_&21&b&lор&20&b&lо&210&b&lа_ &d&lТ&210&d&lр&20&d&lц  ",
+                        "&f✈ &20&3&oа&210&3а&21&3о&3&oт&201&3к &b&l_&21&b&lо&210&b&lо&210&b&lа_ &d&lТ&210&d&lр&20&d&lц  ",
+                        "&f✈ &20&3&oа&210&3а&21&3о&3&oт&201&3к &201&b&lо&210110&b&lа_ &d&lТ&210&d&lр&20&d&lц  ",
+                        "&f✈ &20&3&oа&21011&3о&3&oт&201&3к &201&b&lо&210110&b&lа_ &d&lТ&21010&d&lц   ",
+                        "&f✈ &20&3&oа&21011&3о&3&oт&2011 &201&b&lо&210110&b&lа_ &201010&d&lц   ",
+                        "&f✈ &20&3&oа&210110&3&oт&2011 &201&b&lо&2101100&b&l_ &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &200101101011 &20101011001 &2010100    ",
+                        "&f✈ &3Р&20010110101 &21010101100 &2101010    ",
+                        "&f✈ &3Р&3&oа&2001011010 &21101010110 &2010101    ",
+                        "&f✈ &3Р&3&oа&3з&200101101 &20110101011 &2001010    ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&20010110 &21011010101 &2100101    ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&2001011 &20101101010 &2110010    ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&200101 &21010110101 &2011001    ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&20010 &21101011010 &2101100   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&2001 &20110101101 &2010110   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&200 &21011010110 &2101011   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&20 &20101101011 &2010101   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &20010110101 &2101010   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &20101101011 &201010&d&lТ   ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &21011010110 &21010&d&lТв  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &20110101101 &2010&d&lТво  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &21101011010 &210&d&lТвор  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &21010110101 &20&d&lТворе  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &20101101010 &d&lТворец  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&2010110101 &d&lТворец  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k?&201011010 &d&lТворец  ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k??&20101101 &d&lТворец ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k???&2010110 &d&lТворец ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????&201011 &d&lТворец ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k?????&20101 &d&lТворец ",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k??????&2010 &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k???????&201 &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????????&20 &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????????&b&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????????&b&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????????&b&l_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k???????&b&lа_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k??????&b&lка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k?????&b&lвка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k????&b&lовка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k???&b&lковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k??&b&lрковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&l&k?&b&lорковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&b&lМорковка_ &d&lТворец",
+                },
+                {
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТворе&4&l&k?",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТвор&4&l&k?&2&lц",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТво&4&l&k?&2&lец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТв&4&l&k?&2&lрец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &d&lТ&4&l&k?&2&lорец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &4&l&k?&2&lворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковка&4&l&k?&r &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морковк&4&l&k?&b&l_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морков&4&l&k?&b&la_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морко&4&l&k?&b&lka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Морк&4&l&k?&b&lvka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мор&4&l&k?&b&lovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Мо&4&l&k?&b&lkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_М&4&l&k?&b&lrkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_&4&k?&b&lorkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &4&l&k?&b&lMorkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&3к &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&3&oи&4&l&k?&r &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&3ч&4&l&k?&3к &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&3&oт&4&l&k?&3ик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&3о&4&l&k?&3чик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&3&oб&4&l&k?&3тчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&3а&4&l&k?&3отчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&3&oр&4&l&k?&3ботчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&3з&4&l&k?&3аботчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&3&oа&4&l&k?&3работчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Р&4&l&k?&3зработчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &4&l&k?&3азработчик &b&l_Morkovka_ &2&lТворец",
+                        "&f✈ &3Разработчик &b&l_Morkovka_ &2&lТворец",
+                },
+        };
+
+        private static final int[] ANIMATION_TICKS = {3, 2, 2, 2, 3}; // Тики для каждой анимации
+        private static final long[] ANIMATION_PAUSES = {440L, 100L, 100L, 100L, 100L}; // Паузы для каждой анимации
+
+        @Override
+        public void onEnable() {
+            getServer().getPluginManager().registerEvents(this, this);
+            loadRanks();
+            getCommand("setrank").setExecutor(this);
+            startAnimationTask();
+        }
+
+        @Override
+        public void onDisable() {
+            saveRanks();
+        }
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            if (command.getName().equalsIgnoreCase("setrank")) {
+                if (!sender.isOp()) {
+                    sender.sendMessage(ChatColor.RED + "У Вас нет прав на использование этой команды");
+                    return false;
+                }
+
+                if (args.length != 2) {
+                    sender.sendMessage(ChatColor.RED + "/setrank <player> <rank>");
+                    return false;
+                }
+
+                Player target = getServer().getPlayer(args[0]);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "Игрок не найден");
+                    return false;
+                }
+
+                String rank = args[1];
+                playerRanks.put(target.getUniqueId(), rank);
+                sender.sendMessage(ChatColor.GREEN + "Ранг " + rank + " был установлен игроку " + target.getName());
+                updatePlayerDisplayName(target);
+                return true;
+            }
+            return false;
+        }
+
+        @EventHandler
+        public void onPlayerJoin(PlayerJoinEvent event) {
+            Player player = event.getPlayer();
+            updatePlayerDisplayName(player);
+        }
+
+        @EventHandler
+        public void onPlayerChat(AsyncPlayerChatEvent event) {
+            Player player = event.getPlayer();
+            String rank = playerRanks.getOrDefault(player.getUniqueId(), "Пионер");
+            String rankColor = getRankColor(rank);
+            String message = event.getMessage();
+
+            event.setFormat(ChatColor.GOLD + "[" + ChatColor.DARK_AQUA + "Лк" + ChatColor.GOLD + "] " + rankColor + getRankDisplayName(rank) + player.getName() + ChatColor.GOLD + ": " + ChatColor.WHITE + message);
+        }
+
+        private String getRankColor(String rank) {
+            switch (rank) {
+                case "Творец":
+                    return "[" + ChatColor.WHITE + "✈" + ChatColor.GOLD + "] " + ChatColor.GOLD + "" + ChatColor.BOLD + "[" + ChatColor.DARK_BLUE + ChatColor.BOLD + "Разработчик" + ChatColor.GOLD + ChatColor.BOLD + "] " + ChatColor.DARK_RED + "[" + ChatColor.DARK_GREEN + ChatColor.BOLD;
+                case "Мастер":
+                    return "[" + ChatColor.WHITE + "?" + ChatColor.GOLD + "] " + ChatColor.RED + "[" + ChatColor.GREEN + ChatColor.BOLD;
+                case "Техник":
+                    return "[" + ChatColor.WHITE + "?" + ChatColor.GOLD + "] " + ChatColor.GOLD + "[" + ChatColor.YELLOW;
+                case "Пионер":
+                    return "[" + ChatColor.WHITE + "?" + ChatColor.GOLD + "] " + ChatColor.DARK_GRAY + "[" + ChatColor.GRAY;
+                default:
+                    return "[" + ChatColor.WHITE + "?" + ChatColor.GOLD + "] " + ChatColor.DARK_GRAY + "[" + ChatColor.GRAY;
+            }
+        }
+
+        private String getRankDisplayName(String rank) {
+            switch (rank) {
+                case "Творец":
+                    return "Творец" + ChatColor.DARK_RED + "] " + ChatColor.AQUA + ChatColor.BOLD;
+                case "Мастер":
+                    return "Мастер" + ChatColor.RED + "] " + ChatColor.YELLOW;
+                case "Техник":
+                    return "Техник" + ChatColor.GOLD + "] " + ChatColor.RED;
+                case "Пионер":
+                    return "Пионер" + ChatColor.DARK_GRAY + "] " + ChatColor.WHITE;
+                default:
+                    return "Пионер" + ChatColor.DARK_GRAY + "] " + ChatColor.WHITE;
+            }
+        }
+
+        private void loadRanks() {
+            ranksFile = new File("C:/Users/ttv36_000/Documents/MinecraftETU/ranks.yml");
+            if (!ranksFile.exists()) {
+                ranksFile.getParentFile().mkdirs();
+                saveResource("ranks.yml", false);
+            }
+            ranksConfig = YamlConfiguration.loadConfiguration(ranksFile);
+
+            for (String key : ranksConfig.getConfigurationSection("ranks").getKeys(false)) {
+                UUID uuid = UUID.fromString(key);
+                String rank = ranksConfig.getString("ranks." + key);
+                playerRanks.put(uuid, rank);
+            }
+        }
+
+        private void saveRanks() {
+            for (Map.Entry<UUID, String> entry : playerRanks.entrySet()) {
+                ranksConfig.set("ranks." + entry.getKey().toString(), entry.getValue());
+            }
+            try {
+                ranksConfig.save(ranksFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void updatePlayerDisplayName(Player player) {
+            String rank = playerRanks.getOrDefault(player.getUniqueId(), "Новичок");
+            String displayName;
+
+            if (rank.equals("Творец")) {
+                displayName = getTabRankDisplayName(rank);
+            } else {
+                displayName = player.getName() + " " + getTabRankDisplayName(rank);
+            }
+
+            // Устанавливаем отображаемое имя игрока
+            player.setDisplayName(displayName);
+
+            // Устанавливаем имя для таба
+            player.setPlayerListName(displayName);
+        }
+
+        private String getTabRankDisplayName(String rank) {
+            switch (rank) {
+                case "Творец":
+                    return ChatColor.translateAlternateColorCodes('&', ANIMATIONS[currentAnimation][animationIndex]);
+                case "Мастер":
+                    return ChatColor.GREEN + "" + ChatColor.BOLD + "Мастер ";
+                case "Техник":
+                    return ChatColor.YELLOW + "Техник ";
+                case "Пионер":
+                    return ChatColor.GRAY + "Пионер ";
+                default:
+                    return ChatColor.GRAY + "Новичок ";
+            }
+        }
+
+        private void startAnimationTask() {
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // Анимация в прямом направлении
+                    animationIndex++;
+                    if (animationIndex >= ANIMATIONS[currentAnimation].length) {
+                        animationIndex = 0;
+                        currentAnimation = (currentAnimation + 1) % ANIMATIONS.length;
+                        // Пауза перед следующей анимацией
+                        this.cancel();
+                        Bukkit.getScheduler().runTaskLater(Ranks.this, this, ANIMATION_PAUSES[currentAnimation]);
+                    } else {
+                        updatePlayerDisplayNames();
+                        // Обновляем каждые ANIMATION_TICKS[currentAnimation] тиков
+                        this.cancel();
+                        Bukkit.getScheduler().runTaskLater(Ranks.this, this, ANIMATION_TICKS[currentAnimation]);
+                    }
+                }
+            }.runTaskTimer(this, 0L, 20L);
+        }
+
+        private void updatePlayerDisplayNames() {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                updatePlayerDisplayName(player);
+            }
+        }
+    }
+
