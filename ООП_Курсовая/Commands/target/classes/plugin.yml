@@ -1,0 +1,34 @@
+name: Commands
+version: '1.0'
+main: me.millkun.commands.Commands
+api-version: 1.12
+commands:
+  gamemode:
+    usage: /gm <mode>
+    aliases: [gm]
+  setwarp:
+    usage: /setwarp <name>
+  delwarp:
+    usage: /delwarp <name>
+  warp:
+    usage: /warp <name>
+  warps:
+    usage: /warps
+  spawn:
+    usage: /spawn
+  sun:
+    usage: /sun
+  rain:
+    usage: /rain
+  thunder:
+    usage: /thunder
+  day:
+    usage: /day
+  night:
+    usage: /night
+  creative:
+    usage: /creative
+  adventure:
+    usage: /adventure
+  spectator:
+    usage: /spectator
