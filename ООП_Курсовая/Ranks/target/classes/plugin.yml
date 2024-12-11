@@ -1,0 +1,10 @@
+name: Ranks
+version: 1.0
+main: me.millkun.ranks.Ranks
+api-version: 1.12.2
+author: _Morkovka_
+commands:
+  setrank:
+    description: Устанавливает ранг игроку
+    permission: ranks.setrank
+    permission-message: У вас нет прав на использование этой команды.
